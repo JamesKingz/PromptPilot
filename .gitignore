@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+
+# Frontend builds
+dist/
+dist-ssr/
+.vite/
+.cache/
+.tmp/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!auth_server/.env.example
+auth_server/.env
+auth_server/.otp-mailbox.log
+*.local
+.envrc
+
+# Authentication artifacts
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*service-account*.json
+google-*-credentials.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Database and backups
+*.sql.gz
+*.dump
+*.backup
+*.bak
+backups/
+pgdata/
+dump/
+dumps/
+
+# Generated server output
+auth_server/dist/
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+._*
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
