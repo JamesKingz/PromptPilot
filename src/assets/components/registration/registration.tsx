@@ -41,7 +41,7 @@ export function Registration({ onSwitchToLogin }: RegistrationProps) {
         syncPrompts: form.get('syncPrompts') === 'on',
       })
       setChallengeId(result.challengeId)
-      setStatus('Enter the 6-digit code sent to your email.')
+      setStatus('Enter the 6-digit code sent to your emai.')
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Registration failed.')
     } finally {
