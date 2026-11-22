@@ -10,7 +10,9 @@
   display: grid;
   place-items: center;
   padding: 38px;
-  background: radial-gradient(circle at 12% 18%, rgba(90, 133, 206, 0.12), transparent 26%), linear-gradient(135deg, #edf3fb 0%, #dde7f5 100%);
+  background: radial-gradient(circle at 12% 18%, 
+  rgba(90, 133, 206, 0.12), transparent 26%), 
+  linear-gradient(135deg, #edf3fb 0%, #dde7f5 100%);
 }
 
 .auth-card {
