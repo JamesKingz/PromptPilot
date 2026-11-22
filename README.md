@@ -1,8 +1,8 @@
 # PromptPilot
 
-PromptPilot is a full-stack authentication interface for a prompt-management workflow. It provides a responsive login and account-registration experience, with secure session handling and email-based one-time password (OTP) verification.
+Currently,
 
-The project includes a React frontend and an Express API backed by PostgreSQL. Users can create an account, verify their email, sign in with an OTP, reset a forgotten password, and maintain a refresh session.
+The project provides a responsive login and account-registration experience, with secure session handling and email-based one-time password (OTP) verification, it includes a React frontend and an Express API backed by PostgreSQL. Users can create an account, verify their email, sign in with an OTP, reset a forgotten password, and maintain a refresh session.
 
 ## Features
 
