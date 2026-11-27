@@ -3,14 +3,14 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { and, eq, isNull, gt, or } from 'drizzle-orm'
 import { db } from '../db'
-import { users, passwordResetTokens } from '../db/schema'
+import { users, passwordResetTokens, refreshTokens } from '../db/schema'
 import { HttpError } from '../utils/http'
 import { createOtp, verifyOtp } from './otp.service'
 import { issueRefreshToken, signAccessToken } from './token.service'
 import { env } from '../config/env'
 
 const passwordSchema = z.string()
-  .min(12, 'Password must contain at least 12 characters')
+  .min(8, 'Password must contain at least 8 characters')
   .regex(/[a-z]/, 'Password must contain a lowercase letter')
   .regex(/[A-Z]/, 'Password must contain an uppercase letter')
   .regex(/[0-9]/, 'Password must contain a number')
@@ -29,8 +29,8 @@ export async function register(input: {
 }, metadata: { ipAddress?: string; userAgent?: string }) {
   const username = input.username.trim()
   const email = normalizeEmail(input.email)
-  if (!/^[a-zA-Z0-9._-]{3,50}$/.test(username)) {
-    throw new HttpError(400, 'Username must be 3-50 characters and use letters, numbers, dots, underscores or hyphens')
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._ -]{1,48}[a-zA-Z0-9]$/.test(username)) {
+    throw new HttpError(400, 'Username must be 3-50 characters and use letters, numbers, spaces, dots, underscores or hyphens')
   }
   const emailResult = z.string().email().safeParse(email)
   if (!emailResult.success) throw new HttpError(400, 'Enter a valid email address')
@@ -133,6 +133,68 @@ export async function getMe(userId: string) {
   return publicUser(user)
 }
 
+export async function updateUsername(userId: string, usernameInput: string) {
+  const username = usernameInput.trim()
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._ -]{1,48}[a-zA-Z0-9]$/.test(username)) {
+    throw new HttpError(400, 'Username must be 3-50 characters')
+  }
+  const existing = await db.select({ id: users.id }).from(users)
+    .where(eq(users.username, username)).limit(1)
+  if (existing.length && existing[0].id !== userId) {
+    throw new HttpError(409, 'That username is already in use')
+  }
+  const [user] = await db.update(users).set({ username, updatedAt: new Date() })
+    .where(eq(users.id, userId)).returning()
+  if (!user) throw new HttpError(404, 'Account unavailable')
+  return publicUser(user)
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string, confirmPassword: string) {
+  if (newPassword !== confirmPassword) throw new HttpError(400, 'Passwords do not match')
+  const passwordResult = passwordSchema.safeParse(newPassword)
+  if (!passwordResult.success) throw new HttpError(400, passwordResult.error.issues[0].message)
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  if (!user) throw new HttpError(404, 'Account unavailable')
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash)
+  if (!valid) throw new HttpError(401, 'Current password is incorrect')
+  const passwordHash = await bcrypt.hash(newPassword, env.bcryptSaltRounds)
+  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, userId))
+  await db.update(refreshTokens).set({ revokedAt: new Date() })
+    .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)))
+  return { message: 'Password updated. Sign in on your devices again.' }
+}
+
+export async function updatePromptHistory(userId: string, enabled: boolean, retentionDays: number) {
+  if (![-1, 7, 30, 90].includes(retentionDays)) {
+    throw new HttpError(400, 'Invalid history retention period')
+  }
+  const [user] = await db.update(users).set({
+    promptHistoryEnabled: enabled,
+    promptRetentionDays: enabled ? retentionDays : 0,
+    updatedAt: new Date(),
+  }).where(eq(users.id, userId)).returning()
+  if (!user) throw new HttpError(404, 'Account unavailable')
+  return publicUser(user)
+}
+
+export async function deleteAccount(userId: string, password: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  if (!user) throw new HttpError(404, 'Account unavailable')
+  const valid = await bcrypt.compare(password, user.passwordHash)
+  if (!valid) throw new HttpError(401, 'Password is incorrect')
+  await db.transaction(async (tx) => {
+    await tx.update(refreshTokens).set({ revokedAt: new Date() })
+      .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)))
+    await tx.update(users).set({
+      isActive: false,
+      email: `deleted-${user.id}@deleted.promptpilot.local`,
+      username: `deleted-${user.id}`,
+      updatedAt: new Date(),
+    }).where(eq(users.id, userId))
+  })
+  return { message: 'Account deleted' }
+}
+
 function publicUser(user: typeof users.$inferSelect) {
   return {
     id: user.id,
@@ -140,5 +202,7 @@ function publicUser(user: typeof users.$inferSelect) {
     email: user.email,
     emailVerified: user.emailVerified,
     syncPrompts: user.syncPrompts,
+    promptHistoryEnabled: user.promptHistoryEnabled,
+    promptRetentionDays: user.promptRetentionDays,
   }
 }

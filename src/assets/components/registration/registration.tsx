@@ -6,9 +6,10 @@ import './registration.css'
 
 type RegistrationProps = {
   onSwitchToLogin: () => void
+  onAuthenticated?: (username?: string) => void
 }
 
-export function Registration({ onSwitchToLogin }: RegistrationProps) {
+export function Registration({ onSwitchToLogin, onAuthenticated }: RegistrationProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [status, setStatus] = useState('')
@@ -54,8 +55,9 @@ export function Registration({ onSwitchToLogin }: RegistrationProps) {
     setLoading(true)
     setStatus('')
     try {
-      await verifyRegistration(challengeId, otp)
+      const result = await verifyRegistration(challengeId, otp)
       setStatus('Account verified. You are now signed in.')
+      onAuthenticated?.(result.user?.username)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Verification failed.')
     } finally {
@@ -81,7 +83,7 @@ export function Registration({ onSwitchToLogin }: RegistrationProps) {
             <form onSubmit={handleSubmit}>
               <label className="field">
                 <span>Username</span>
-                <input type="text" name="name" placeholder="Choose a username" minLength={2} required />
+                <input type="text" name="name" placeholder="Choose a username" minLength={3} maxLength={50} required />
               </label>
 
               <label className="field">
@@ -184,9 +186,9 @@ export function Registration({ onSwitchToLogin }: RegistrationProps) {
             <span>PromptPilot</span>
           </div>
           <div className="art-content">
-            <span className="art-kicker">GET STARTED</span>
-            <h2>Make every AI workflow start with more clarity.</h2>
-            <p>Create a private workspace for better prompts, clearer outputs, and every kind of task.</p>
+            <span className="art-kicker">START YOUR WORKSPACE</span>
+            <h2>Turn stronger prompts into repeatable workflows.</h2>
+            <p>Create your account to save prompts, refine ideas, and organize every AI task in one private space.</p>
           </div>
           <div className="art-glow art-glow-one" />
           <div className="art-glow art-glow-two" />

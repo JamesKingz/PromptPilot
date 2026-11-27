@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import jwt from 'jsonwebtoken'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, ne } from 'drizzle-orm'
 import { db } from '../db'
 import { refreshTokens } from '../db/schema'
 import { env } from '../config/env'
@@ -144,4 +144,41 @@ export async function revokeRefreshToken(token: string) {
     await db.update(refreshTokens).set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.jti, decoded.jti), isNull(refreshTokens.revokedAt)))
   }
+}
+
+export async function listRefreshSessions(userId: string) {
+  const rows = await db.select({
+    id: refreshTokens.id,
+    expiresAt: refreshTokens.expiresAt,
+    revokedAt: refreshTokens.revokedAt,
+    userAgent: refreshTokens.userAgent,
+    ipAddress: refreshTokens.ipAddress,
+    createdAt: refreshTokens.createdAt,
+  }).from(refreshTokens).where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)))
+  return rows.filter((row) => row.expiresAt > new Date())
+}
+
+export async function revokeRefreshSession(userId: string, sessionId: string) {
+  await db.update(refreshTokens).set({ revokedAt: new Date() })
+    .where(and(
+      eq(refreshTokens.id, sessionId),
+      eq(refreshTokens.userId, userId),
+      isNull(refreshTokens.revokedAt),
+    ))
+}
+
+export async function revokeOtherRefreshSessions(userId: string, currentToken?: string) {
+  if (!currentToken) {
+    await db.update(refreshTokens).set({ revokedAt: new Date() })
+      .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)))
+    return
+  }
+  const decoded = jwt.decode(currentToken) as jwt.JwtPayload | null
+  if (!decoded?.jti) return
+  await db.update(refreshTokens).set({ revokedAt: new Date() })
+    .where(and(
+      eq(refreshTokens.userId, userId),
+      isNull(refreshTokens.revokedAt),
+      ne(refreshTokens.jti, decoded.jti),
+    ))
 }

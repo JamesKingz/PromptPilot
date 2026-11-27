@@ -25,6 +25,50 @@
   box-shadow: 0 24px 70px rgba(31, 55, 94, 0.16);
 }
 
+.auth-card--register {
+  perspective: 1800px;
+}
+
+.auth-card--register .auth-form-side {
+  order: 2;
+  transform-origin: left center;
+  animation: registration-page-open 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.auth-card--register .auth-art {
+  order: 1;
+  transform-origin: right center;
+  animation: registration-leaf-open 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes registration-page-open {
+  0% {
+    opacity: 0;
+    transform: translateX(-10%) rotateY(76deg) scaleX(0.82);
+  }
+  42% {
+    opacity: 0.78;
+  }
+  72% {
+    transform: translateX(1.5%) rotateY(-3deg) scaleX(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotateY(0) scaleX(1);
+  }
+}
+
+@keyframes registration-leaf-open {
+  0% {
+    opacity: 0.35;
+    filter: brightness(0.82);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
 .auth-card--forward .auth-form-side,
 .auth-card--backward .auth-form-side {
   animation: form-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -636,6 +680,25 @@
 
   .switch-auth {
     margin-top: 12px;
+  }
+}
+
+.auth-card--register .auth-form-side {
+  order: 2;
+  animation: registration-page-open 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left center;
+}
+
+.auth-card--register .auth-art {
+  order: 1;
+  animation: registration-leaf-open 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: right center;
+}
+
+@media (max-width: 680px), (prefers-reduced-motion: reduce) {
+  .auth-card--register .auth-form-side,
+  .auth-card--register .auth-art {
+    animation: none;
   }
 }
 

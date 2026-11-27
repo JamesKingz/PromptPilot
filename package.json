@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5173 --strictPort",
     "dev:server": "tsx watch auth_server/src/index.ts",
     "build:server": "tsc -p auth_server/tsconfig.json",
     "start:server": "node auth_server/dist/index.js",

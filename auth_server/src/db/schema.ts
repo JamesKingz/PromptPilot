@@ -8,6 +8,8 @@ export const users = pgTable('users', {
   emailVerified: boolean('email_verified').notNull().default(false),
   termsAccepted: boolean('terms_accepted').notNull().default(false),
   syncPrompts: boolean('sync_prompts').notNull().default(false),
+  promptHistoryEnabled: boolean('prompt_history_enabled').notNull().default(true),
+  promptRetentionDays: integer('prompt_retention_days').notNull().default(30),
   isActive: boolean('is_active').notNull().default(true),
   failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
   lockedUntil: timestamp('locked_until', { withTimezone: true }),

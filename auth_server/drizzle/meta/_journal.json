@@ -8,6 +8,13 @@
       "when": 1795280256391,
       "tag": "0000_elite_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795370355319,
+      "tag": "0001_lush_elektra",
+      "breakpoints": true
     }
   ]
 }

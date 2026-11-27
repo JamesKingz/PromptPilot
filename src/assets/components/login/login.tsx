@@ -8,9 +8,10 @@ import './login.css'
 
 type LoginProps = {
   onSwitchToRegister: () => void
+  onAuthenticated?: (username?: string) => void
 }
 
-export function Login({ onSwitchToRegister }: LoginProps) {
+export function Login({ onSwitchToRegister, onAuthenticated }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,8 +43,9 @@ export function Login({ onSwitchToRegister }: LoginProps) {
     setLoading(true)
     setStatus('')
     try {
-      await verifyLogin(challengeId, otp, rememberMe)
+      const result = await verifyLogin(challengeId, otp, rememberMe)
       setStatus('Signed in successfully.')
+      onAuthenticated?.(result.user?.username)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Verification failed.')
     } finally {
@@ -181,8 +183,8 @@ export function Login({ onSwitchToRegister }: LoginProps) {
           </div>
           <div className="art-content">
             <span className="art-kicker">WELCOME BACK</span>
-            <h2>Make every AI workflow start with more clarity.</h2>
-            <p>Shape your ideas, refine the message, and route every prompt to the right AI.</p>
+            <h2>Continue building clearer AI workflows.</h2>
+            <p>Pick up where you left off, refine your ideas, and route each prompt to the right AI.</p>
             <div className="workflow-steps" aria-label="PromptPilot workflow">
               <div><span>01</span><strong>Write</strong><small>Start with natural language</small></div>
               <div><span>02</span><strong>Refine</strong><small>Get a structured prompt</small></div>

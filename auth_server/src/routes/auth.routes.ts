@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import jwt from 'jsonwebtoken'
 import rateLimit from 'express-rate-limit'
 import type { Request, Response } from 'express'
 import { getCsrf } from '../middleware/csrf'
@@ -130,6 +131,68 @@ router.post('/reset-password', otpLimiter, asyncHandler(async (req: Request, res
     String(req.body.confirmPassword ?? ''),
   )
   res.json(result)
+}))
+
+router.patch('/account/username', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const result = await auth.updateUsername(req.auth!.sub, String(req.body.username ?? ''))
+  res.json({ message: 'Username updated', user: result })
+}))
+
+router.post('/account/change-password', requireAuth, authLimiter, asyncHandler(async (req: Request, res: Response) => {
+  const result = await auth.changePassword(
+    req.auth!.sub,
+    String(req.body.currentPassword ?? ''),
+    String(req.body.newPassword ?? ''),
+    String(req.body.confirmPassword ?? ''),
+  )
+  res.json(result)
+}))
+
+router.patch('/account/history', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const result = await auth.updatePromptHistory(
+    req.auth!.sub,
+    Boolean(req.body.enabled),
+    Number(req.body.retentionDays ?? 30),
+  )
+  res.json({ message: 'Prompt history settings updated', user: result })
+}))
+
+router.delete('/account', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const result = await auth.deleteAccount(req.auth!.sub, String(req.body.password ?? ''))
+  clearRefreshCookie(res)
+  res.json(result)
+}))
+
+router.get('/sessions', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const sessions = await tokenService.listRefreshSessions(req.auth!.sub)
+  const currentToken = req.cookies?.[refreshCookieName] as string | undefined
+  let currentJti: string | undefined
+  if (currentToken) {
+    const decoded = jwt.decode(currentToken) as { jti?: string } | null
+    currentJti = decoded?.jti
+  }
+  res.json({
+    sessions: sessions.map((session) => ({
+      id: session.id,
+      isCurrent: session.id === currentJti,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+    })),
+  })
+}))
+
+router.delete('/sessions/:sessionId', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const sessionId = Array.isArray(req.params.sessionId) ? req.params.sessionId[0] : req.params.sessionId
+  await tokenService.revokeRefreshSession(req.auth!.sub, sessionId)
+  res.json({ message: 'Session ended' })
+}))
+
+router.post('/sessions/revoke-others', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const currentToken = req.cookies?.[refreshCookieName] as string | undefined
+  await tokenService.revokeOtherRefreshSessions(req.auth!.sub, currentToken)
+  res.json({ message: 'Other sessions ended' })
 }))
 
 export default router
